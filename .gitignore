@@ -141,4 +141,4 @@ cython_debug/
 
 .idea/
 
-airtable_caching/json
+airtable_cacher/json
