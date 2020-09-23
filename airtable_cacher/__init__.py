@@ -31,7 +31,7 @@ class Base:
             curr_folder = os.path.dirname(__file__)
             main_json_folder = os.path.join(curr_folder, "json")
         else:
-            main_json_folder = os.path.dirname(json_folder)
+            main_json_folder = os.path.abspath(json_folder)
         if not os.path.isdir(main_json_folder):
             os.mkdir(main_json_folder)
         self.json_folder = os.path.join(main_json_folder, self.base_id)
@@ -73,7 +73,7 @@ class Table:
             curr_folder = os.path.dirname(__file__)
             main_json_folder = os.path.join(curr_folder, "json")
         else:
-            main_json_folder = os.path.dirname(json_folder)
+            main_json_folder = os.path.abspath(json_folder)
         self.json_folder = os.path.join(main_json_folder, self.base_id)
 
     def get(self, rec_id, resolve_fields=None):
