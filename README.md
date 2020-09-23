@@ -1,5 +1,7 @@
 # Airtable Cacher
-Utility for caching api responses from the airtable-python-wrapper
+
+This plugin is fork of the work done by Ron Mountjoy on `Airtable Caching`
+https://github.com/rmountjoy92/AirtableCaching
 
 # Caching
 First you must setup a recurring script that will cache the table.
