@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="airtable-cacher",
-    version="1.0",
+    version="1.0.1",
     author="thuxley",
     author_email="thomas.huxley90@gmail.com",
     description="Utility for caching api responses from the airtable-python-wrapper based on airtable-caching by "
