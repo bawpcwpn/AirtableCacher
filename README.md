@@ -27,6 +27,10 @@ from airtable_cacher import Base
 airtable = Base(<AIRTABLE_BASE_ID>, <AIRTABLE_API_KEY>, "my_json_folder")
 ```
 
+## Caching images
+
+If you'd like to cache images, you can do so by supplying an optional fourth argument
+
 # Accessing cached data
 
 ```
