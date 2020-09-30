@@ -142,3 +142,5 @@ cython_debug/
 .idea/
 
 airtable_cacher/json
+test.py
+json

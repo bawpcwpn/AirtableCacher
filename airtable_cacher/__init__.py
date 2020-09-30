@@ -199,7 +199,7 @@ class Base:
     def cache_attachments(self, json_data):
         for rIndex, record in enumerate(json_data["list"]):
             attachments = get_record_attachments(record)
-            if "field" in attachments:
+            if attachments is not None and "field" in attachments:
                 for idx, attachment in enumerate(attachments["field"]):
                     attachments["field"][idx] = self.cache_attachment(attachments["field"][idx], record["id"])
                     self.delete_old_attachments(attachments, record["id"])
