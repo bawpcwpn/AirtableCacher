@@ -44,13 +44,14 @@ def remove_empty_folders(path, remove_root=True):
 
 
 def get_record_attachments(record):
+    attachments = []
     if "fields" in record:
         fields = record["fields"]
         for key in fields.keys():
             field = fields[key]
             if isinstance(field, list) and "url" in field[0]:
-                return {"key": key, "field": field}
-    return None
+                attachments.append({"key": key, "field": field})
+    return attachments
 
 
 class Base:
@@ -89,7 +90,7 @@ class Base:
         attachment_url_parsed = urlparse(attachment_url)
         path = self.json_folder + attachment_url_parsed.path
         if os.path.isfile(path):
-            print('File exists :'+attachment_url_parsed.path)
+            print('File exists :' + attachment_url_parsed.path)
             return True
         return False
 
@@ -121,24 +122,35 @@ class Base:
             return False
 
     def delete_attachment(self, attachment):
-        parsed_url = urlparse(attachment["url"])
+        parsed_url = urlparse(attachment["url"].replace(self.cache_url_base + '/' + self.base_id,''))
         pathname = self.json_folder + parsed_url.path
-        os.remove(pathname)
+
+        print(pathname)
+
+        try:
+            print("Delete: ",pathname)
+            os.remove(pathname)
+        except EnvironmentError:
+            print('No file found: ',pathname)
 
         if "thumbnails" in attachment:
             thumbnail_sizes = ["small", "large", "full"]
             for size in thumbnail_sizes:
                 if size in attachment["thumbnails"]:
                     url = attachment["thumbnails"][size]["url"]
-                    parsed_url = urlparse(url)
+                    parsed_url = urlparse(url.replace(self.cache_url_base + '/' + self.base_id,''))
                     pathname = self.json_folder + parsed_url.path
-                    os.remove(pathname)
+                    try:
+                        print("Delete: ",pathname)
+                        os.remove(pathname)
+                    except EnvironmentError:
+                        print('No file found: ',pathname)
         return
 
     def delete_old_attachments(self, new_attachments, record_id):
         if self.existing_table is None:
+            print('no cached json')
             return
-
         rec = [rec for rec in self.existing_table if rec["id"] == record_id][0]
         if rec:
             current_record = rec
@@ -148,18 +160,24 @@ class Base:
         if "fields" not in current_record:
             return
 
-        if new_attachments["key"] not in current_record:
-            return
+        current_attachments = get_record_attachments(current_record)
 
-        current_attachments = current_record[new_attachments["key"]]
-        for c_attachment in current_attachments:
-            attachment_exists = False
-            for n_attachment in new_attachments["field"]:
-                if c_attachment["id"] == n_attachment["id"]:
-                    attachment_exists = True
-            if not attachment_exists:
-                # Delete the attachment!
-                self.delete_attachment(c_attachment)
+        for c_attachment_field in current_attachments:
+            matching_field = next((n_attachment['field'] for n_attachment in
+                                   new_attachments if c_attachment_field["key"] ==
+                                   n_attachment["key"]), None)
+            if matching_field:
+                for c_attachment in c_attachment_field["field"]:
+                    attachment_exists = False
+                    for n_attachment in matching_field:
+                        if c_attachment["id"] == n_attachment["id"]:
+                            attachment_exists = True
+                    if not attachment_exists:
+                        self.delete_attachment(c_attachment)
+            else:
+                # key no longer exists, so delete all attachments
+                for c_attachment in c_attachment_field["field"]:
+                    self.delete_attachment(c_attachment)
 
         # Remove all empty folders
         remove_empty_folders(self.json_folder, False)
@@ -185,12 +203,11 @@ class Base:
     def cache_attachments(self, json_data):
         for rIndex, record in enumerate(json_data["list"]):
             attachments = get_record_attachments(record)
-            if attachments is not None and "field" in attachments:
-                for idx, attachment in enumerate(attachments["field"]):
-                    attachments["field"][idx] = self.cache_attachment(attachments["field"][idx])
-                    self.delete_old_attachments(attachments, record["id"])
-                json_data["list"][rIndex]["fields"][attachments["key"]] = attachments["field"]
-
+            self.delete_old_attachments(attachments, record["id"])
+            for attachment_field in attachments:
+                for idx, attachment in enumerate(attachment_field["field"]):
+                    attachment_field["field"][idx] = self.cache_attachment(attachment_field["field"][idx])
+                json_data["list"][rIndex]["fields"][attachment_field["key"]] = attachment_field["field"]
         return json_data
 
     def cache_table(self, table_name, attachment_cache=False, **kwargs):
