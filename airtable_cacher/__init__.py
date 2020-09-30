@@ -85,19 +85,21 @@ class Base:
 
         return cache_exists
 
-    def attachment_exists(self, attachment_url, current_attachments):
-        for attachment in current_attachments:
-            current_attachment_url_parsed = urlparse(attachment["url"])
-            path = self.json_folder + current_attachment_url_parsed.path
-            if os.path.isfile(path):
-                return attachment
-        return None
+    def attachment_exists(self, attachment_url):
+        attachment_url_parsed = urlparse(attachment_url)
+        path = self.json_folder + attachment_url_parsed.path
+        if os.path.isfile(path):
+            print('File exists :'+attachment_url_parsed.path)
+            return True
+        return False
 
     def save_attachment(self, url):
         parsed_url = urlparse(url)
-
-        filename = parsed_url.path.split("/")[-1]
         pathname = self.json_folder + parsed_url.path
+        new_filename = self.cache_url_base + '/' + self.base_id + parsed_url.path
+
+        if self.attachment_exists(url):
+            return new_filename
 
         # Open the url image, set stream to True, this will return the stream content.
         r = requests.get(url, stream=True)
@@ -113,7 +115,7 @@ class Base:
                 copyfileobj(r.raw, f)
 
             print('Image sucessfully Downloaded: ', parsed_url.path)
-            return self.cache_url_base + '/' + self.base_id + '/' + parsed_url.path
+            return new_filename
         else:
             print('Image Couldn\'t be retreived')
             return False
@@ -163,23 +165,7 @@ class Base:
         remove_empty_folders(self.json_folder, False)
         return
 
-    def cache_attachment(self, field, record_id):
-        cache_exists = self.existing_table is not None
-
-        current_record = None
-        if cache_exists:
-            rec = [rec for rec in self.existing_table if rec["id"] == record_id][0]
-            if rec:
-                current_record = rec
-
-        if current_record:
-            current_record_attachments = get_record_attachments(current_record)
-            attachment_exists = self.attachment_exists(field["url"], current_record_attachments["field"])
-            if attachment_exists:
-                return attachment_exists
-            else:
-                print('attachment does not exist currently')
-
+    def cache_attachment(self, field):
         original_url = field["url"]
         new_attachment_url = self.save_attachment(original_url)
         if new_attachment_url:
@@ -201,7 +187,7 @@ class Base:
             attachments = get_record_attachments(record)
             if attachments is not None and "field" in attachments:
                 for idx, attachment in enumerate(attachments["field"]):
-                    attachments["field"][idx] = self.cache_attachment(attachments["field"][idx], record["id"])
+                    attachments["field"][idx] = self.cache_attachment(attachments["field"][idx])
                     self.delete_old_attachments(attachments, record["id"])
                 json_data["list"][rIndex]["fields"][attachments["key"]] = attachments["field"]
 
