@@ -4,6 +4,7 @@ from shutil import rmtree, copyfileobj
 from airtable import Airtable
 from urllib.parse import urlparse
 import requests
+from pathlib import Path
 
 """
  █████╗ ██╗██████╗ ████████╗ █████╗ ██████╗ ██╗     ███████╗
@@ -342,11 +343,18 @@ class Table:
         return self.list[-1]
 
     def __get_dict_list_from_json_file(self):
-        with open(
-                os.path.join(self.json_folder, f"{self.table_name}.json"), "r"
-        ) as json_file:
-            table_dict = json.load(json_file)
+        json_file_path = os.path.join(self.json_folder, f"{self.table_name}.json")
+        if Path(json_file_path).exists():
+            with open(
+                    json_file_path, "r"
+            ) as json_file:
+                table_dict = json.load(json_file)
+                self.list = table_dict["list"]
+        else:
+            print("No cached table found for ",self.table_name)
+            table_dict = {"list": []}
         self.list = table_dict["list"]
+
 
     def __resolve_relationships(self, resolve_fields):
         for table_name, rel_field in resolve_fields.items():
