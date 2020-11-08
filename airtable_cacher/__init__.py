@@ -153,7 +153,11 @@ class Base:
         if self.existing_table is None:
             print('no cached json')
             return
-        rec = [rec for rec in self.existing_table if rec["id"] == record_id][0]
+        rec_list = [rec for rec in self.existing_table if rec["id"] == record_id]
+        if len(rec_list):
+            rec = rec_list[0]
+        else:
+            return
         if rec:
             current_record = rec
         else:
