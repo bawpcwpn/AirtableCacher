@@ -50,8 +50,9 @@ def get_record_attachments(record):
         fields = record["fields"]
         for key in fields.keys():
             field = fields[key]
-            if isinstance(field, list) and "url" in field[0]:
-                attachments.append({"key": key, "field": field})
+            if isinstance(field, list) and isinstance(field[0],dict):
+                if "url" in field[0]:
+                    attachments.append({"key": key, "field": field})
     return attachments
 
 
