@@ -137,7 +137,7 @@ class Base:
             logger.info("Delete: ", pathname)
             os.remove(pathname)
         except EnvironmentError:
-            logger.error('No file found: ', pathname)
+            logger.info('No file found: ', pathname)
 
         if "thumbnails" in attachment:
             thumbnail_sizes = ["small", "large", "full"]
@@ -150,7 +150,7 @@ class Base:
                         logger.info("Delete: ", pathname)
                         os.remove(pathname)
                     except EnvironmentError:
-                        logger.error('No file found: ', pathname)
+                        logger.info('No file found: ', pathname)
         return
 
     def delete_old_attachments(self, new_attachments, record_id):
