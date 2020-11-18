@@ -45,7 +45,7 @@ def remove_empty_folders(path, remove_root=True):
     # if folder empty, delete it
     files = os.listdir(path)
     if len(files) == 0 and remove_root:
-        logger.info("Removing empty folder:", path)
+        logger.info(f"Removing empty folder: {path}")
         os.rmdir(path)
 
 
@@ -99,7 +99,7 @@ class Base:
         attachment_url_parsed = urlparse(attachment_url)
         path = self.json_folder + attachment_url_parsed.path
         if os.path.isfile(path):
-            logger.info('File exists :' + attachment_url_parsed.path)
+            logger.info(f"File exists : {attachment_url_parsed.path}")
             return True
         return False
 
@@ -124,7 +124,7 @@ class Base:
             with open(pathname, 'wb') as f:
                 copyfileobj(r.raw, f)
 
-            logger.info('Image sucessfully Downloaded: ', parsed_url.path)
+            logger.info(f"Image sucessfully Downloaded: {parsed_url.path}")
             return new_filename
         else:
             logger.info('Image Couldn\'t be retreived')
@@ -134,10 +134,10 @@ class Base:
         parsed_url = urlparse(attachment["url"].replace(self.cache_url_base + '/' + self.base_id, ''))
         pathname = self.json_folder + parsed_url.path
         try:
-            logger.info("Delete: ", pathname)
+            logger.info(f"Delete: {pathname}")
             os.remove(pathname)
         except EnvironmentError:
-            logger.info('No file found: ', pathname)
+            logger.info(f"No file found: {pathname}")
 
         if "thumbnails" in attachment:
             thumbnail_sizes = ["small", "large", "full"]
@@ -147,10 +147,10 @@ class Base:
                     parsed_url = urlparse(url.replace(self.cache_url_base + '/' + self.base_id, ''))
                     pathname = self.json_folder + parsed_url.path
                     try:
-                        logger.info("Delete: ", pathname)
+                        logger.info(f"Delete: {pathname}")
                         os.remove(pathname)
                     except EnvironmentError:
-                        logger.info('No file found: ', pathname)
+                        logger.info(f"No file found: {pathname}")
         return
 
     def delete_old_attachments(self, new_attachments, record_id):
