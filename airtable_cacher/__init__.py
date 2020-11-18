@@ -5,6 +5,7 @@ from airtable import Airtable
 from urllib.parse import urlparse
 import requests
 from pathlib import Path
+import logging
 
 """
  █████╗ ██╗██████╗ ████████╗ █████╗ ██████╗ ██╗     ███████╗
@@ -23,6 +24,10 @@ from pathlib import Path
 Author: Ross Mountjoy and Thomas Huxley                                             
 """
 
+# Set up the logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 def remove_empty_folders(path, remove_root=True):
     'Function to remove empty folders'
@@ -40,7 +45,7 @@ def remove_empty_folders(path, remove_root=True):
     # if folder empty, delete it
     files = os.listdir(path)
     if len(files) == 0 and remove_root:
-        print("Removing empty folder:", path)
+        logger.info("Removing empty folder:", path)
         os.rmdir(path)
 
 
@@ -50,7 +55,7 @@ def get_record_attachments(record):
         fields = record["fields"]
         for key in fields.keys():
             field = fields[key]
-            if isinstance(field, list) and isinstance(field[0],dict):
+            if isinstance(field, list) and isinstance(field[0], dict):
                 if "url" in field[0]:
                     attachments.append({"key": key, "field": field})
     return attachments
@@ -78,13 +83,15 @@ class Base:
     def load_current_table(self, table_name):
         cache_exists = False
         try:
+            path = os.path.join(self.json_folder, f"{table_name}.json")
+            logger.info(f"Load current table: {path}")
             with open(
-                    os.path.join(self.json_folder, f"{table_name}.json"), "r"
+                    path, "r"
             ) as json_file:
                 self.existing_table = json.load(json_file)["list"]
                 cache_exists = True
         except EnvironmentError:
-            print("oops")
+            logger.error("oops")
 
         return cache_exists
 
@@ -92,7 +99,7 @@ class Base:
         attachment_url_parsed = urlparse(attachment_url)
         path = self.json_folder + attachment_url_parsed.path
         if os.path.isfile(path):
-            print('File exists :' + attachment_url_parsed.path)
+            logger.info('File exists :' + attachment_url_parsed.path)
             return True
         return False
 
@@ -117,41 +124,38 @@ class Base:
             with open(pathname, 'wb') as f:
                 copyfileobj(r.raw, f)
 
-            print('Image sucessfully Downloaded: ', parsed_url.path)
+            logger.info('Image sucessfully Downloaded: ', parsed_url.path)
             return new_filename
         else:
-            print('Image Couldn\'t be retreived')
+            logger.info('Image Couldn\'t be retreived')
             return False
 
     def delete_attachment(self, attachment):
-        parsed_url = urlparse(attachment["url"].replace(self.cache_url_base + '/' + self.base_id,''))
+        parsed_url = urlparse(attachment["url"].replace(self.cache_url_base + '/' + self.base_id, ''))
         pathname = self.json_folder + parsed_url.path
-
-        print(pathname)
-
         try:
-            print("Delete: ",pathname)
+            logger.info("Delete: ", pathname)
             os.remove(pathname)
         except EnvironmentError:
-            print('No file found: ',pathname)
+            logger.error('No file found: ', pathname)
 
         if "thumbnails" in attachment:
             thumbnail_sizes = ["small", "large", "full"]
             for size in thumbnail_sizes:
                 if size in attachment["thumbnails"]:
                     url = attachment["thumbnails"][size]["url"]
-                    parsed_url = urlparse(url.replace(self.cache_url_base + '/' + self.base_id,''))
+                    parsed_url = urlparse(url.replace(self.cache_url_base + '/' + self.base_id, ''))
                     pathname = self.json_folder + parsed_url.path
                     try:
-                        print("Delete: ",pathname)
+                        logger.info("Delete: ", pathname)
                         os.remove(pathname)
                     except EnvironmentError:
-                        print('No file found: ',pathname)
+                        logger.error('No file found: ', pathname)
         return
 
     def delete_old_attachments(self, new_attachments, record_id):
         if self.existing_table is None:
-            print('no cached json')
+            logger.info('no cached json')
             return
         rec_list = [rec for rec in self.existing_table if rec["id"] == record_id]
         if len(rec_list):
@@ -253,11 +257,15 @@ class Table:
 
         # get json folder path
         if json_folder is None:
+            logger.info("json_folder not set")
             curr_folder = os.path.dirname(__file__)
             main_json_folder = os.path.join(curr_folder, "json")
         else:
+            logger.info(f"json_folder: {json_folder}")
             main_json_folder = os.path.abspath(json_folder)
+        logger.info(f"main_json_folder: {main_json_folder}")
         self.json_folder = os.path.join(main_json_folder, self.base_id)
+        logger.info(f"self.json_folder: {self.json_folder}")
 
     def get(self, rec_id, resolve_fields=None):
         """
@@ -349,6 +357,8 @@ class Table:
 
     def __get_dict_list_from_json_file(self):
         json_file_path = os.path.join(self.json_folder, f"{self.table_name}.json")
+        logger.info("__get_dict_list_from_json_file")
+        logger.info(f"json_file_path: {json_file_path}")
         if Path(json_file_path).exists():
             with open(
                     json_file_path, "r"
@@ -356,10 +366,9 @@ class Table:
                 table_dict = json.load(json_file)
                 self.list = table_dict["list"]
         else:
-            print("No cached table found for ",self.table_name)
+            logger.info(f"No cached table found for {self.table_name}")
             table_dict = {"list": []}
         self.list = table_dict["list"]
-
 
     def __resolve_relationships(self, resolve_fields):
         for table_name, rel_field in resolve_fields.items():
